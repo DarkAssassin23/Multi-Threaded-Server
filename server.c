@@ -62,7 +62,6 @@ int main(int argc, char **argv)
         printf("Connected to %s\n", inet_ntoa(clientAddr.sin_addr));
 
         // Puts the connection in queue for thread to pull from
-
         int *pclient = malloc(sizeof(int));
         *pclient = clientSocket;
         pthread_mutex_lock(&mutex);
