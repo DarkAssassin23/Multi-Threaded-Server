@@ -1,14 +1,20 @@
 #!/usr/bin/python3
 
+#
+# Basic client to test connecting to the server
+#
+
 import socket, ipaddress, sys, time, random
 
 # Default host and port to connect to
-HOST = "127.0.0.1"
+HOST = "localhost"
 PORT = 8989
 
 
 # Checks if IP Address passed in is valid
 def validIP(ip):
+	if(ip=="localhost"):
+		return True
 	bits = ip.split('.')
 	if(len(bits)>4 or len(bits)<4):
 		return False
@@ -28,14 +34,10 @@ def validPort(port):
 		return False
 	return True
 
-if(len(sys.argv)>2):
-	if(validIP(sys.argv[1])):
-		HOST = sys.argv[1]
-	if(validPort(sys.argv[2])):
-		PORT = (int)(sys.argv[2])
-elif(len(sys.argv)>1):
-	if(validIP(sys.argv[1])):
-		HOST = sys.argv[1]
+if(len(sys.argv)>2 and validPort(sys.argv[2])):
+    PORT = (int)(sys.argv[2])
+if(len(sys.argv)>1 and validIP(sys.argv[1])):
+    HOST = sys.argv[1]
 	
 filesToRequest = ["makefile", "server.c", "queue.c", "queue.h"]
 # Create socket
