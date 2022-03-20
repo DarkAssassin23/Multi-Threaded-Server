@@ -22,6 +22,7 @@ typedef struct sockaddr SA;
 
 pthread_t threadPool[THREAD_POOL_SIZE];
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t conditionVar = PTHREAD_COND_INITIALIZER;
 
 void * handleConnection(void* pclientSocket);
 int check(int exp, const char *msg);
@@ -66,6 +67,7 @@ int main(int argc, char **argv)
         *pclient = clientSocket;
         pthread_mutex_lock(&mutex);
         enqueue(pclient);
+        pthread_cond_signal(&conditionVar);
         pthread_mutex_unlock(&mutex);
         // pthread_create(&t, NULL, handleConnection, pclient);
         //handleConnection(pclient);
@@ -91,7 +93,11 @@ void * threadFunction(void *arg)
     {
         int *pclient;
         pthread_mutex_lock(&mutex);
-        pclient = dequeue();
+        if((pclient = dequeue())==NULL)
+        {
+            pthread_cond_wait(&conditionVar, &mutex);
+            pclient = dequeue();
+        }
         pthread_mutex_unlock(&mutex);
         if(pclient != NULL)
         {
