@@ -1,5 +1,5 @@
 TARGET = server
-LIBS = #-lm
+LIBS = -lpthread
 CC = gcc
 CFLAGS = -g -Wall
 
