@@ -9,21 +9,32 @@
 #include <limits.h>
 #include <pthread.h>
 
+#include "queue.h"
+
 #define SERVERPORT 8989
 #define BUFSIZE 4096
 #define SOCKETERROR (-1)
 #define SERVER_BACKLOG 100
+#define THREAD_POOL_SIZE 20 // play around with this number for best performance
 
 typedef struct sockaddr_in SA_IN;
 typedef struct sockaddr SA;
 
+pthread_t threadPool[THREAD_POOL_SIZE];
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 void * handleConnection(void* pclientSocket);
 int check(int exp, const char *msg);
+void * threadFunction(void *arg);
 
 int main(int argc, char **argv)
 {
     int serverSocket, clientSocket, addrSize;
     SA_IN serverAddr, clientAddr;
+
+    // Create thread pool
+    for(int x=0;x<THREAD_POOL_SIZE;x++)
+        pthread_create(&threadPool[x], NULL, threadFunction, NULL);
 
     // Create a TCP socket and check if it failed or not
     check((serverSocket = socket(AF_INET, SOCK_STREAM, 0)), "Failed to create socket");
@@ -49,10 +60,14 @@ int main(int argc, char **argv)
         // Prints out IP Address of the connected client
         printf("Connected to %s\n", inet_ntoa(clientAddr.sin_addr));
 
-        pthread_t t;
+        // Puts the connection in queue for thread to pull from
+
         int *pclient = malloc(sizeof(int));
         *pclient = clientSocket;
-        pthread_create(&t, NULL, handleConnection, pclient);
+        pthread_mutex_lock(&mutex);
+        enqueue(pclient);
+        pthread_mutex_unlock(&mutex);
+        // pthread_create(&t, NULL, handleConnection, pclient);
         //handleConnection(pclient);
     }
 
@@ -68,6 +83,22 @@ int check(int exp, const char* msg)
         exit(-1);
     }
     return exp;
+}
+
+void * threadFunction(void *arg)
+{
+    while(true)
+    {
+        int *pclient;
+        pthread_mutex_lock(&mutex);
+        pclient = dequeue();
+        pthread_mutex_unlock(&mutex);
+        if(pclient != NULL)
+        {
+            // We have a connection
+            handleConnection(pclient);
+        }
+    }
 }
 
 void * handleConnection(void* pclientSocket)

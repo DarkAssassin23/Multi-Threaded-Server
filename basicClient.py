@@ -37,7 +37,7 @@ elif(len(sys.argv)>1):
 	if(validIP(sys.argv[1])):
 		HOST = sys.argv[1]
 	
-filesToRequest = ["makefile", "server.c"]
+filesToRequest = ["makefile", "server.c", "queue.c", "queue.h"]
 # Create socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
