@@ -69,8 +69,6 @@ int main(int argc, char **argv)
         enqueue(pclient);
         pthread_cond_signal(&conditionVar);
         pthread_mutex_unlock(&mutex);
-        // pthread_create(&t, NULL, handleConnection, pclient);
-        //handleConnection(pclient);
     }
 
     return 0;
@@ -87,6 +85,7 @@ int check(int exp, const char* msg)
     return exp;
 }
 
+// Manage thread pool and check if there is work to do
 void * threadFunction(void *arg)
 {
     while(true)
@@ -107,6 +106,8 @@ void * threadFunction(void *arg)
     }
 }
 
+// Function to handle what to do with an 
+// incoming connection
 void * handleConnection(void* pclientSocket)
 {
     int clientSocket = *((int*)pclientSocket);
