@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <pthread.h>
 
 #define SERVERPORT 8989
 #define BUFSIZE 4096
@@ -16,7 +17,7 @@
 typedef struct sockaddr_in SA_IN;
 typedef struct sockaddr SA;
 
-void handleConnection(int clientSocket);
+void * handleConnection(void* pclientSocket);
 int check(int exp, const char *msg);
 
 int main(int argc, char **argv)
@@ -48,7 +49,11 @@ int main(int argc, char **argv)
         // Prints out IP Address of the connected client
         printf("Connected to %s\n", inet_ntoa(clientAddr.sin_addr));
 
-        handleConnection(clientSocket);
+        pthread_t t;
+        int *pclient = malloc(sizeof(int));
+        *pclient = clientSocket;
+        pthread_create(&t, NULL, handleConnection, pclient);
+        //handleConnection(pclient);
     }
 
     return 0;
@@ -65,8 +70,10 @@ int check(int exp, const char* msg)
     return exp;
 }
 
-void handleConnection(int clientSocket)
+void * handleConnection(void* pclientSocket)
 {
+    int clientSocket = *((int*)pclientSocket);
+    free(pclientSocket); // free pointer since we don't need it
     char buffer[BUFSIZE];
     size_t bytesRead;
     int msgSize = 0;
@@ -92,7 +99,7 @@ void handleConnection(int clientSocket)
     {
         printf("ERROR(bad path): %s\n", buffer);
         close(clientSocket);
-        return;
+        return NULL;
     }
 
     // Opens file and sends it's contents to the client
@@ -101,7 +108,7 @@ void handleConnection(int clientSocket)
     {
         printf("ERROR(open): %s\n", buffer);
         close(clientSocket);
-        return;
+        return NULL;
     }
 
     // Read file contents and send them to the client
@@ -115,4 +122,5 @@ void handleConnection(int clientSocket)
     close(clientSocket);
     fclose(fp);
     printf("closing connection...\n");
+    return NULL;
 }

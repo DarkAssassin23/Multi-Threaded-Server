@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import socket, ipaddress, sys
+import socket, ipaddress, sys, time, random
 
 # Default host and port to connect to
 HOST = "127.0.0.1"
@@ -37,14 +37,19 @@ elif(len(sys.argv)>1):
 	if(validIP(sys.argv[1])):
 		HOST = sys.argv[1]
 	
+filesToRequest = ["makefile", "server.c"]
 # Create socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Time took to recieve data
+start = time.time()
 
 # Connect to socket
 sock.connect((HOST, PORT))
 
 # Create and send message
-data = "makefile\n"
+fileToRequest = random.randint(0,len(filesToRequest)-1)
+data = filesToRequest[fileToRequest]+"\n"
 data = data.encode()
 sock.sendall(data)
 
@@ -53,7 +58,11 @@ data = sock.recv(4096)
 msg = data.decode()
 
 # Print out response
-print(msg)
+#print(msg)
 
 # Close connection
 sock.close()
+
+end = time.time() - start
+
+print("Time Elapsed: "+str(end)+", file requested: "+filesToRequest[fileToRequest])
