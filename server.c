@@ -1,5 +1,6 @@
 // Multi-threaded TCP server
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,6 +9,8 @@
 #include <stdbool.h>
 #include <limits.h>
 #include <pthread.h>
+#include <time.h>
+#include <string.h>
 
 #include "queue.h"
 
@@ -27,6 +30,7 @@ pthread_cond_t conditionVar = PTHREAD_COND_INITIALIZER;
 void * handleConnection(void* pclientSocket);
 int check(int exp, const char *msg);
 void * threadFunction(void *arg);
+void getTime(char* timeStr);
 
 int main(int argc, char **argv)
 {
@@ -105,6 +109,16 @@ void * threadFunction(void *arg)
     }
 }
 
+// Gets the current time
+void getTime(char *timeStr)
+{
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    char temp[64];
+    assert(strftime(temp, sizeof(temp),"%c", tm));
+    memcpy(timeStr, temp, sizeof(temp));
+}
+
 // Function to handle what to do with an 
 // incoming connection
 void * handleConnection(void* pclientSocket)
@@ -126,8 +140,10 @@ void * handleConnection(void* pclientSocket)
     check(bytesRead, "Recieve Error");
     buffer[msgSize-1] = 0; // Null terminate the message and remove the \n
 
-    // Print out clients request
-    printf("REQUEST: %s\n",buffer);
+    // Print out clients request and time of request
+    char timeStr[64];
+    getTime(timeStr);
+    printf("FILE REQUESTED: %s, REQUESTED AT: %s\n",buffer, timeStr);
 
     fflush(stdout);
 
