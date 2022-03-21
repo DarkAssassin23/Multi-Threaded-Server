@@ -19,6 +19,7 @@
 #define SOCKETERROR (-1)
 #define SERVER_BACKLOG 100
 #define THREAD_POOL_SIZE 20 // play around with this number for best performance
+#define CONNECTION_TIMEOUT_LENGTH 3 // time out length in seconds
 
 typedef struct sockaddr_in SA_IN;
 typedef struct sockaddr SA;
@@ -61,6 +62,12 @@ int main(int argc, char **argv)
         // Wait for and accept incoming connections
         addrSize = sizeof(SA_IN);
         check((clientSocket = accept(serverSocket, (SA*)&clientAddr, (socklen_t*)&addrSize)), "Accept Failed");
+
+        // Sets a timeout for the socket
+        struct timeval tv;
+        tv.tv_sec = CONNECTION_TIMEOUT_LENGTH;
+        tv.tv_usec = 0;
+        setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
         // Prints out IP Address of the connected client
         printf("Connected to %s\n", inet_ntoa(clientAddr.sin_addr));
@@ -126,17 +133,49 @@ void * handleConnection(void* pclientSocket)
     int clientSocket = *((int*)pclientSocket);
     free(pclientSocket); // free pointer since we don't need it
     char buffer[BUFSIZE];
-    size_t bytesRead;
+    size_t bytesRead = 0;
     int msgSize = 0;
     char actualPath[PATH_MAX+1];
 
     // Read client's message up to BUFSIZE and until a newline character is recieved
+    // otherwise errors out
+    time_t requestStarted = time(0);
+    bool formatError = false;
+    bool timeoutError = false;
     while((bytesRead = read(clientSocket, buffer+msgSize, sizeof(buffer)-msgSize-1))>0)
     {
         msgSize += bytesRead;
         if(msgSize>BUFSIZE-1 || buffer[msgSize-1] == '\n')
             break;
+        else if (difftime(time(0), requestStarted) >= CONNECTION_TIMEOUT_LENGTH)
+        {
+            timeoutError = true;
+            break;
+        }
+        else
+        {
+            formatError = true;
+            break;
+        }
     }
+    if(formatError)
+    {
+        char msg[24] = "Request Format Error...\n";
+        write(clientSocket, msg, sizeof(msg));
+        printf("%s",msg);
+        close(clientSocket);
+        return NULL;
+    }
+
+    if(timeoutError)
+    {
+        char msg[24] = "Connection timed out...\n";
+        write(clientSocket, msg, sizeof(msg));
+        printf("%s",msg);
+        close(clientSocket);
+        return NULL;
+    }
+
     check(bytesRead, "Recieve Error");
     buffer[msgSize-1] = 0; // Null terminate the message and remove the \n
 
