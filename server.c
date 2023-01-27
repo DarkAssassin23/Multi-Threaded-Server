@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <pthread.h>
 #include <time.h>
+#include <sys/time.h>
 #include <string.h>
 
 #include "queue.h"
@@ -64,8 +65,8 @@ int main(int argc, char **argv)
         check((clientSocket = accept(serverSocket, (SA*)&clientAddr, (socklen_t*)&addrSize)), "Accept Failed");
 
         // Sets a timeout for the socket
-        struct timeval tv;
-        tv.tv_sec = CONNECTION_TIMEOUT_LENGTH;
+        struct timeval tv; 
+		tv.tv_sec = CONNECTION_TIMEOUT_LENGTH;
         tv.tv_usec = 0;
         setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
